@@ -22,6 +22,10 @@ class ImageProcessor:
         if self.original_image is None:
             raise ValueError(f"Impossible de charger l'image : {image_path}")
 
+        h, w = self.original_image.shape[:2]
+        if h < 1 or w < 1:
+            raise ValueError(f"Image trop petite : {h}x{w}")
+
         self.current_image = self.original_image.copy()
 
     def get_original(self) -> np.ndarray:
@@ -131,11 +135,24 @@ class ImageProcessor:
             Liste des couleurs RGB dominantes
         """
         image = self.original_image.copy()
+        h, w = image.shape[:2]
+        total_pixels = h * w
+
+        # Cas limite : ajuster num_colors si nécessaire
+        unique_colors = len(set(tuple(pixel) for pixel in image.reshape(-1, 3)))
+        if unique_colors < num_colors:
+            num_colors = max(1, unique_colors)
+        if total_pixels < num_colors:
+            num_colors = max(1, total_pixels // 10)
+
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Redimensionner pour accélérer le clustering
         small = cv2.resize(image, (100, 100))
         data = small.reshape(-1, 3).astype(np.float32)
+
+        if len(data) < num_colors:
+            num_colors = max(1, len(data))
 
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
         _, _, centers = cv2.kmeans(data, num_colors, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)

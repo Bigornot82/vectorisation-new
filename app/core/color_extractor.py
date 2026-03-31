@@ -34,10 +34,18 @@ class ColorExtractor:
         """
         image = self.image.copy()
         h, w = image.shape[:2]
+        total_pixels = h * w
+
+        # Cas limite : si l'image est trop petite ou num_colors trop grand
+        unique_colors = len(set(tuple(pixel) for pixel in image.reshape(-1, 3)))
+        if unique_colors < num_colors:
+            num_colors = max(1, unique_colors)
+        if total_pixels < num_colors:
+            num_colors = max(1, total_pixels // 10)  # Au moins 10 pixels par couleur
 
         # Redimensionner pour le clustering si nécessaire
-        if h * w > 100000:
-            ratio = np.sqrt(100000 / (h * w))
+        if total_pixels > 100000:
+            ratio = np.sqrt(100000 / total_pixels)
             small_h, small_w = int(h * ratio), int(w * ratio)
             small_image = cv2.resize(image, (small_w, small_h))
         else:
@@ -45,6 +53,9 @@ class ColorExtractor:
 
         # Clustering K-means
         data = small_image.reshape(-1, 3).astype(np.float32)
+        if len(data) < num_colors:
+            num_colors = max(1, len(data))
+
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
         _, labels, centers = cv2.kmeans(
             data, num_colors, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS
@@ -52,7 +63,7 @@ class ColorExtractor:
 
         # Reconstruire l'image quantifiée
         centers = np.uint8(centers)
-        if h * w > 100000:
+        if total_pixels > 100000:
             # Appliquer sur l'image originale via mapping nearest
             small_quantized = centers[labels].reshape(small_h, small_w, 3)
             self.quantized_image = cv2.resize(small_quantized, (w, h), interpolation=cv2.INTER_NEAREST)

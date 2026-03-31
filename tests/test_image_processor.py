@@ -101,6 +101,53 @@ class TestImageProcessor(unittest.TestCase):
         # L'image ne devrait pas être identique à l'originale
         self.assertFalse(np.array_equal(result, noisy))
 
+    def test_small_image_handling(self):
+        """Test la gestion des petites images."""
+        # Créer une petite image
+        small_image = np.zeros((10, 10, 3), dtype=np.uint8)
+        small_image[:, :] = [255, 0, 0]  # Rouge
+
+        small_path = os.path.join(self.temp_dir, "small.png")
+        cv2.imwrite(small_path, small_image)
+
+        processor = ImageProcessor(small_path)
+        self.assertEqual(processor.original_image.shape, (10, 10, 3))
+
+        # Test get_dominant_colors avec petite image
+        colors = processor.get_dominant_colors(num_colors=5)
+        self.assertGreater(len(colors), 0)
+        self.assertLessEqual(len(colors), 5)
+
+    def test_very_small_image(self):
+        """Test avec une image très petite (1x1)."""
+        tiny_image = np.zeros((1, 1, 3), dtype=np.uint8)
+        tiny_image[0, 0] = [128, 128, 128]
+
+        tiny_path = os.path.join(self.temp_dir, "tiny.png")
+        cv2.imwrite(tiny_path, tiny_image)
+
+        processor = ImageProcessor(tiny_path)
+        self.assertEqual(processor.original_image.shape, (1, 1, 3))
+
+        # Test get_dominant_colors
+        colors = processor.get_dominant_colors(num_colors=1)
+        self.assertEqual(len(colors), 1)
+
+    def test_few_colors_quantization(self):
+        """Test la quantification avec peu de couleurs."""
+        # Image avec seulement 2 couleurs
+        two_color_image = np.zeros((50, 50, 3), dtype=np.uint8)
+        two_color_image[:25, :] = [255, 0, 0]  # Rouge
+        two_color_image[25:, :] = [0, 255, 0]  # Vert
+
+        two_color_path = os.path.join(self.temp_dir, "two_colors.png")
+        cv2.imwrite(two_color_path, two_color_image)
+
+        processor = ImageProcessor(two_color_path)
+        colors = processor.get_dominant_colors(num_colors=10)  # Demander plus que disponible
+        self.assertGreater(len(colors), 0)
+        self.assertLessEqual(len(colors), 2)  # Ne devrait pas dépasser le nombre réel
+
 
 if __name__ == "__main__":
     unittest.main()

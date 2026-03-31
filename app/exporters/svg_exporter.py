@@ -65,8 +65,12 @@ class SVGExporter:
             if len(contour) < 3:
                 continue
 
+            # Simplifier le contour pour réduire les points inutiles
+            epsilon = 0.01 * cv2.arcLength(contour, True)
+            simplified = cv2.approxPolyDP(contour, epsilon, True)
+
             # Convertir le contour en string de path
-            path_data = self._contour_to_path_data(contour)
+            path_data = self._contour_to_path_data(simplified)
 
             path = ET.SubElement(self.root, "path")
             path.set("d", path_data)
@@ -98,7 +102,11 @@ class SVGExporter:
                 if len(contour) < 3:
                     continue
 
-                path_data = self._contour_to_path_data(contour)
+                # Simplifier le contour
+                epsilon = 0.01 * cv2.arcLength(contour, True)
+                simplified = cv2.approxPolyDP(contour, epsilon, True)
+
+                path_data = self._contour_to_path_data(simplified)
 
                 path = ET.SubElement(group, "path")
                 path.set("d", path_data)

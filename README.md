@@ -70,6 +70,32 @@ L'interface graphique s'ouvre et vous permet de :
 python -m pytest tests/ -v
 ```
 
+## Exécution dans un environnement headless/Codespaces
+
+L'application est conçue pour fonctionner dans des environnements sans affichage graphique (headless), comme GitHub Codespaces ou des serveurs Linux sans X11.
+
+### Configuration pour Codespaces
+
+1. **Variables d'environnement** : L'application détecte automatiquement l'environnement headless et passe en mode offscreen.
+
+2. **Dépendances supplémentaires** : Assurez-vous que les dépendances système sont installées :
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1
+   ```
+
+3. **Lancement** : L'application démarre en mode offscreen par défaut dans Codespaces :
+   ```bash
+   python -m app.main
+   ```
+
+4. **Tests** : Les tests passent automatiquement dans l'environnement headless.
+
+### Dépannage headless
+
+- Si vous rencontrez des erreurs liées à l'affichage, vérifiez que `QT_QPA_PLATFORM=offscreen` est défini.
+- Pour les environnements Docker, ajoutez `--headless` ou configurez le backend approprié.
+
 ## Structure du projet
 
 ```
